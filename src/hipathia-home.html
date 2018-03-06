@@ -1,0 +1,162 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<dom-module id="hipathia-home">
+    <style is="custom-style" include="iron-flex iron-flex-reverse iron-flex-alignment iron-flex-factors iron-positioning"></style>
+    <style>
+        :host {
+            display: block;
+            position: relative;
+            box-sizing: border-box;
+            font-size: 22px;
+            font-weight: 300;
+            padding-top: 2vh;
+            color: var(--text-primary-color);
+        }
+
+        #main {
+            margin: 0px auto 0px auto;
+            max-width: 785px;
+            padding: 2vh;
+        }
+
+        #image {
+            width: 300px;
+            margin: 10px;
+        }
+
+        #button {
+            font-weight: 400;
+            height: auto;
+            margin: 20px;
+            padding: 20px 30px;
+            font-size: 26px;
+            border-radius: 5px;
+            background-color: var(--dark-button-color);
+        }
+
+        #button:hover {
+            background-color: var(--light-button-color);
+        }
+
+        .application {
+            font-size: 80px;
+            text-shadow: 3px 3px 5px var(--dark-primary-color);
+        }
+
+        .description {
+            font-size: 24px;
+            line-height: 40px;
+            padding-top: 30px;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        @media (max-width: 1100px) {
+            #image {
+                width: 230px;
+            }
+        }
+
+        @media (max-width: 800px) {
+            #image {
+                width: 150px;
+            }
+            .megatitle {
+                font-size: 50px;
+            }
+        }
+
+        .paragraph {
+            text-align: justify;
+            padding: 10px 0;
+        }
+
+        .paragraph2 {
+            font-size: 14px;
+            padding: 0 0 10px 0;
+        }
+
+        .title {
+            font-size: 40px;
+            padding-top: 30px;
+            padding-bottom: 10px;
+        }
+
+        .title2 {
+            padding-top: 20px;
+            padding-bottom: 10px;
+        }
+
+        .b {
+            font-weight: 400;
+        }
+
+        a,
+        a:visited {
+            text-decoration: none;
+            color: var(--accent-color);
+        }
+
+        .image-partner{
+            height:60px;
+        }
+    </style>
+    <template>
+        <div id="main">
+            <div class="horizontal layout center-justified center">
+                <div>
+                    <img id="image" src="../images/icon.svg">
+                </div>
+                <div class="vertical layout center">
+                    <div class="application">
+                        <span>hi</span><span style="font-weight:normal">P</span><span>athia</span>
+                    </div>
+                    <div class="description">
+                        <b>
+                            Hi</b>gh throughput
+                        <b>path</b>way
+                        <b>i</b>nference
+                        <b>a</b>nalysis</div>
+                    <br>
+                    <div id="button" class="stv-btn stv-btn-shdw" on-click="handleStart" hidden="{{isLogged}}">
+                        <i class="fa fa-paper-plane"></i> &nbsp; Start
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- <div class="title2">Overview:</div> -->
+            <div class="paragraph">
+                hiPathia is a web tool for the interpretation of the consequences of the combined changes of gene expression levels and/or genomic mutations in the context of signalling pathways. hiPathia transforms uninformative gene expression and/or genomic variation
+                data into signalling circuit activities, which carry information on the different cell functionalities triggered by them. Such signalling activities not only account for the underlying molecular mechanisms of diseases or the mode of action
+                of drugs but they can also be used as mechanistic features for the prediction of complex phenotypes.
+            </div>
+
+            <div class="title2">Note:</div>
+            <div class="paragraph2">
+                hiPathia web application makes an intensive use of the HTML5 standard and other cutting-edge web technologies such as Web Components, so only modern web browsers are fully supported.
+            </div>
+
+            <div class="horizontal layout">
+                <!-- <img class="image-partner" src="../images/elixir.svg"> -->
+            </div>
+        </div>
+
+
+    </template>
+    <script>
+        Polymer({
+            is: 'hipathia-home',
+            properties: {
+                isLogged: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+            handleStart: function() {
+                this.fire('start');
+            }
+        })
+    </script>
+</dom-module>

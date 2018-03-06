@@ -1,0 +1,843 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="hipathia-form-behavior.html">
+<dom-module id="hipathia-prediction-form">
+    <style is="custom-style" include="iron-flex iron-flex-reverse iron-flex-alignment iron-flex-factors iron-positioning"></style>
+    <style>
+        :host {
+            display: block;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        #form {
+            margin: 0px auto 0px auto;
+            max-width: 1000px;
+            padding: 15px 40px;
+            border: 1px solid #c6d0da;
+            background-color: #FFFFFF;
+            box-shadow: 2px 6px 15px 8px rgba(0, 0, 0, 0.30);
+        }
+
+        #title {
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+        }
+
+        #tissue {
+            overflow-y: scroll;
+            height: 200px;
+            border: 1px solid var(--divider-color);
+            background-color: var(--light-primary-color);
+            padding: 5px;
+        }
+
+        .errmsg {
+            color: #8b0000;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+
+        #pathwaysContent {
+            height: 300px;
+        }
+
+        stv-select-box {
+            width: 300px;
+            height: 80px;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .key {
+            color: var(--secondary-text-color);
+        }
+        /**/
+
+        #jobBrowser {
+            width: 600px;
+            height: 300px;
+            border: 1px solid var(--divider-color);
+        }
+
+        #modelBox {
+            width: 350px;
+            margin-left: 10px;
+        }
+
+        #modelInfo {
+            box-sizing: border-box;
+            border: 1px solid var(--divider-color);
+            height: 300px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+    </style>
+    <template>
+        <form id="form">
+            <p id="title">
+                <strong>Differential prediction form</strong>
+            </p>
+            <!-- <div class="horizontal layout center-justified">
+                <div class="stv-btn stv-btn-shdw"><i class="fa fa-rocket"></i> &nbsp; Run example</div>
+            </div>
+            <br> -->
+
+            <div class="stv-formbox">
+                <div class="stv-formtitle">
+                    Type
+                </div>
+                <div class="stv-formcontent">
+                    <label class="stv-control">
+                        <input type="radio" name="type" value="train" checked="true" on-click="handleType">
+                        <span>Train new model</span>
+                    </label>
+                    <label class="stv-control">
+                        <input type="radio" name="type" value="test" on-click="handleType">
+                        <span>Test existing model</span>
+                    </label>
+
+                    <div hidden$="{{_checkValue('test',type)}}" class="horizontal layout wrap" style="margin-top:10px;">
+                        <div>
+                            <label class="stv">Existing models:</label>
+                            <stv-job-browser id="jobBrowser" on-jobselect="handleModelJobSelect" allowed-tools="{{predictionAllowedTool}}" user-data="{{userData}}" hide-status-filter hide-tool-filter disable-relaunch view="done"></stv-job-browser>
+                            <!-- <div id="models"> -->
+                            <!-- <stv-select-box options="{{predictionJobs}}"></stv-select-box> -->
+                            <!-- </div> -->
+                        </div>
+                        <div id="modelBox">
+                            <label class="stv">Selected model information:</label>
+                            <div id="modelInfo">
+                                <span class="key">Design file: </span>{{modelDesignFile.name}}
+                                <br>
+                                <template is="dom-repeat" items="{{modelStats}}">
+                                    <div>
+                                        <span class="key">{{item.key}}: </span>{{item.value}}
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <span id="modelError" class="errmsg"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="stv-formbox">
+                <div class="stv-formtitle">
+                    Input data
+                </div>
+                <div class="stv-formcontent">
+                    <div class="horizontal layout">
+                        <label class="stv-control">
+                            <input type="radio" name="expression" checked="true" value="matrix" on-click="handleExpressionMode">
+                            <span>Expression matrix</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="expression" value="database" on-click="handleExpressionMode">
+                            <span>Expression database</span>
+                        </label>
+                    </div>
+                    <br>
+                    <div hidden$="{{_checkValue('matrix', expressionMode)}}">Expression matrix file: &nbsp;
+                        <stv-file-origin id="exp_file" selection-mode="file" bioformats="{{matrixBioformat}}" user-data="{{userData}}" on-ok-click="checkExpFile">
+                        </stv-file-origin>
+                        <span id="exp_fileError" class="errmsg"></span>
+                    </div>
+                    <div hidden$="{{_checkValue('database', expressionMode)}}">
+                        <label class="stv">Tissues databases:</label>
+                        <br>
+                        <div class="horizontal layout">
+                            <label class="stv-control">
+                                <input type="radio" name="exp_db" checked="true" value="ea" on-click="handleExpressionDatabase">
+                                <span>Expression atlas</span>
+                            </label>
+                            <label class="stv-control">
+                                <input type="radio" name="exp_db" value="hpa" on-click="handleExpressionDatabase">
+                                <span>Human protein atlas</span>
+                            </label>
+                        </div>
+                        <br>
+                        <label class="stv">Tissue names:</label>
+                        <br>
+                        <div id="tissue">
+                            <template is="dom-repeat" items="{{selectedTissueSet}}">
+                                <label class="stv-control">
+                                    <input type="radio" name$="{{exp_db}}" checked$="{{item.selected}}" value="{{item.name}}">
+                                    <span>{{item.name}}</span>
+                                </label>
+                            </template>
+                        </div>
+                        <span id="tissueError" class="errmsg"></span>
+                    </div>
+
+                    <br>
+                    <div>Variant file:
+                        <span class="key">(Required when using expression database)</span> &nbsp;
+                        </stv-opencga-file-origin>
+                        <stv-file-origin id="variant_file" selection-mode="file" bioformats="{{variantBioformat}}" user-data="{{userData}}" on-ok-click="checkVariantFile" selected-file="{{variantFile}}">
+                        </stv-file-origin>
+                        <span id="variant_fileError" class="errmsg"></span>
+                    </div>
+                </div>
+            </div>
+
+
+            <div hidden$="{{_checkValue('train',type)}}">
+                <div class="stv-formbox">
+                    <div class="stv-formtitle">
+                        Design data
+                    </div>
+                    <div class="stv-formcontent">
+                        <div class="horizontal layout">
+                            <label class="stv-control">
+                                <input type="radio" name="design_type" checked="true" value="categorical" on-click="handleDesignType">
+                                <span>Two group comparison</span>
+                            </label>
+                            <label class="stv-control">
+                                <input type="radio" name="design_type" value="continuous" on-click="handleDesignType">
+                                <span>Correlation with continous variable</span>
+                            </label>
+                            <!-- <label class="stv-control" hidden$="{{checkNullFile(variantFile)}}">
+                                <input type="radio" name="design_type" value="mutation" on-click="handleDesignType">
+                                <span>Mutation effect</span>
+                            </label> -->
+                        </div>
+                        <br>
+                        <div hidden$="{{!_checkValue('mutation', design_type)}}">Experimental design file: &nbsp;
+                            <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
+                            </stv-file-origin>
+                            <span id="design_fileError" class="errmsg"></span>
+                        </div>
+
+                        <div hidden="{{_checkValue('categorical', design_type)}}" style="padding:5px 0 0 5px;">
+                            <label class="stv">Condition 1:</label>
+                            <stv-select-box id="condition1Select" options="{{designConditions}}" title-attribute="name">
+                            </stv-select-box>
+                            <div id="condition1SelectError" class="errmsg"></div>
+
+                            <label class="stv">Condition 2:</label>
+                            <stv-select-box id="condition2Select" options="{{designConditions}}" title-attribute="name">
+                            </stv-select-box>
+                            <span id="condition2SelectError" class="errmsg"></span>
+                            <span id="conditionError" class="errmsg"></span>
+                        </div>
+
+                        <div hidden$="{{_checkValue('mutation', design_type)}}">
+                            <label class="stv">Expression vs (Expression + Variant file)</label>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="stv-formbox">
+                    <div class="stv-formtitle">
+                        Species
+                    </div>
+                    <div class="stv-formcontent ">
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="hsa" checked="true">
+                            <span>Human (Homo sapiens)</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="mmu" disabled$="{{!checkNullFile(variantFile)}}">
+                            <span>Mouse (Mus musculus)</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="rno" disabled$="{{!checkNullFile(variantFile)}}">
+                            <span>Rat (Rattus norvegicus)</span>
+                        </label>
+                    </div>
+                </div>
+
+
+                <div hidden$="{{checkNullFile(variantFile)}}" class="stv-formbox">
+                    <div class="stv-formtitle">
+                        Mutation impact
+                    </div>
+                    <div class="stv-formcontent ">
+                        <label class="stv" style="margin-top:10px;">Reference genome:</label>
+                        <label class="stv-control">
+                            <input type="radio" name="ref_genome" value="hg19" checked="true">
+                            <span>GRCh37</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="ref_genome" value="hg38">
+                            <span>GRCh38</span>
+                        </label>
+                        <label class="stv" style="margin-top:10px;">Inheritance pattern:</label>
+                        <label class="stv-control">
+                            <input type="radio" name="inheritance_pattern" value="recessive" checked="true">
+                            <span>Recessive</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="inheritance_pattern" value="dominant">
+                            <span>Dominant</span>
+                        </label>
+                        <br>
+                        <label class="stv-control">
+                            <input type="checkbox" name="compound_hetero">
+                            <span>Inclide compound heterozygotes</span>
+                        </label>
+                        <br>
+                        <label class="stv-control">
+                            <input type="checkbox" name="sift" checked>
+                            <span>SIFT</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="checkbox" name="polyphen">
+                            <span>PolyPhen</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="checkbox" name="phastcons">
+                            <span>PhastCons</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="stv-formbox">
+                    <div class="stv-formtitle">
+                        Parameters
+                    </div>
+                    <div class="stv-formcontent">
+                        <label class="stv-control">
+                            <input type="checkbox" name="decompose">
+                            <span>Decompose paths</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="checkbox" name="filter_paths">
+                            <span>Filter subpaths</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="stv-formbox">
+                    <div class="stv-formtitle horizontal layout center">
+                        <div class="flex">Pathways</div>
+                        <label class="stv-control">
+                            <input type="checkbox" checked on-change="handleSelectPW">
+                            <span style="font-size:13px;">All</span>
+                        </label>
+                    </div>
+                    <span id="pathwaysError" class="errmsg"></span>
+                    <div id="pathwaysContent" class="stv-formcontent" style="overflow-y:scroll;">
+                        <template is="dom-repeat" items="{{pathwaysList}}">
+                            <label class="stv-control">
+                                <input type="checkbox" value="{{item.value}}" checked$="{{item.selected}}">
+                                <span>{{item.name}}</span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="stv-formbox">
+                <div class="stv-formtitle">
+                    Job information
+                </div>
+                <div class="stv-formcontent">
+                    <div>Output folder: &nbsp;
+                        <stv-file-origin id="output_folder" selection-mode="folder" bioformats="{{bioformats}}" user-data="{{userData}}">
+                        </stv-file-origin>
+                        <span id="output_folderError" class="errmsg"></span>
+                    </div>
+                    <br>
+                    <label class="stv">Job name:</label>
+                    <input type="text" id="jobName" class="stv" style="width:200px;" value="" />
+                    <label class="stv">Description:</label>
+                    <textarea id="jobDescription" class="stv" style="width:200px;"></textarea>
+                </div>
+            </div>
+
+            <span class="errmsg">{{errorMessage}}</span>
+            <div class="horizontal layout center-justified">
+                <div class="stv-btn stv-btn-shdw stv-btn-big" on-click="launchJob"><i class="fa fa-rocket"></i> &nbsp; Launch Job</div>
+            </div>
+            <br>
+        </form>
+
+
+    </template>
+
+    <script>
+        Polymer({
+            is: 'hipathia-prediction-form',
+            behaviors: [HipathiaFormBehavior],
+            properties: {
+                type: {
+                    type: String,
+                    value: 'train'
+                },
+                predictionAllowedTool: {
+                    type: Array,
+                    value: ['hipathia.prediction-train']
+                },
+                modelJob: {
+                    type: Object
+                },
+                modelStats: {
+                    type: Array
+                },
+                modelDesignFile: {
+                    type: Object
+                },
+                modelFile: {
+                    type: Object
+                }
+            },
+
+            created: function() {
+                this._loadPathwaysList();
+            },
+            ready: function() {
+                this.set('selectedTissueSet', this.ea);
+                this.set('exp_db', 'ea');
+                // this.set('selectPathwaysSet', this.pathwaysHumanSet);
+            },
+
+            handleType: function(e) {
+                this.set('type', e.currentTarget.value);
+                this._clean();
+            },
+            handleModelJobSelect: function(e) {
+                var me = this;
+                this.modelJob = e.detail;
+
+                SteviaManager.getPlainFolderFiles(this.modelJob.options.design_file.value, function(files2) {
+                    me.modelDesignFile = files2[0];
+                    SteviaManager.getPlainFolderFiles(me.modelJob.folder._id, function(files) {
+                        me.processResultFiles(files);
+                    });
+                });
+            },
+            processResultFiles: function(files) {
+                var me = this;
+                this.fileNameMap = {};
+                for (var i = 0; i < files.length; i++) {
+                    var f = files[i];
+                    this.fileNameMap[f.name] = f;
+                }
+                this.modelFile = this.fileNameMap['model.RData'];
+
+                SteviaManager.getFileContent(this.fileNameMap['model_stats.txt']._id, function(textContent) {
+                    me.processModelStats(textContent);
+                });
+            },
+            processModelStats: function(textContent) {
+                var modelStats = [];
+                var lines = textContent.split('\n');
+                var line, fields, field;
+                if (lines.length > 0) {
+                    for (var i = 1; i < lines.length; i++) {
+                        line = lines[i];
+                        if (line != '') {
+                            fields = line.split('\t');
+                            modelStats.push({
+                                key: fields[0],
+                                value: fields[1]
+                            });
+                        }
+                    }
+                }
+                this.set('modelStats', modelStats);
+            },
+
+            runTrainExample: function() {
+                var me = this;
+                var query = {
+                    sid: Cookies("bioinfo_sid"),
+                    name: 'Prediction train example',
+                    description: ''
+                };
+
+                var args = {
+                    tool: this.toolId,
+                    execution: 'prediction-train',
+                    executable: 'prediction-train.sh',
+                    options: {
+                        "output_folder": {
+                            out: true,
+                        },
+                        "verbose": {
+                            type: 'flag'
+                        },
+                        "species": {
+                            "type": "text",
+                            "value": "hsa"
+                        },
+                        "design_type": {
+                            "type": "text",
+                            "value": "categorical"
+                        },
+                        "exp_file": {
+                            "type": "file",
+                            "mode": "example",
+                            "value": "brca_genes_vals_bn.txt"
+                        },
+                        "design_file": {
+                            "type": "file",
+                            "mode": "example",
+                            "value": "brca_normal-basal_ed.txt"
+                        },
+                        "cond1": {
+                            "type": "text",
+                            "value": "Normal"
+                        },
+                        "cond2": {
+                            "type": "text",
+                            "value": "Tumor"
+                        },
+                        "pathways_list": {
+                            "type": "text",
+                            "value": "04014,04015,04010,04012,04310,04330,04340,04350,04390,04370,04630,04064,04668,04066,04068,04020,04071,04024,04022,04151,04152,04150,04110,04114,04210,04115,04510,04520,04530,04540,04611,04620,04621,04622,04650,04660,04662,04664,04666,04670,04062,04910,04922,04920,03320,04912,04915,04914,04921,04919,04916,04261,04270,04722,05200,05231,05202,05205"
+                        }
+                    }
+                };
+
+                this._createJob(query, args);
+            },
+            runTestExample: function() {
+                var me = this;
+                var query = {
+                    sid: Cookies("bioinfo_sid"),
+                    name: 'Prediction test example',
+                    description: ''
+                };
+
+                var args = {
+                    tool: this.toolId,
+                    execution: 'prediction-test',
+                    executable: 'prediction-test.sh',
+                    options: {
+                        "output_folder": {
+                            out: true,
+                        },
+                        "verbose": {
+                            type: 'flag'
+                        },
+                        "exp_file": {
+                            "type": "file",
+                            "mode": "example",
+                            "value": "brca_genes_vals_bn_test.txt"
+                        },
+                        "model_file": {
+                            "type": "file",
+                            "mode": "example",
+                            "value": "model.RData"
+                        }
+                    }
+                };
+
+                this._createJob(query, args);
+            },
+            _clean: function() {
+                this.errorMessage = '';
+                this.$.exp_file.reset();
+                this.$.design_file.reset();
+                this.$.output_folder.reset();
+                this.$.variant_file.reset();
+
+                this.set('designConditions', []);
+                this.$.condition1Select.value = '';
+                this.$.condition2Select.value = '';
+
+                this.$.form.elements['compound_hetero'].checked = false;
+                this.$.form.elements['sift'].checked = false;
+                this.$.form.elements['polyphen'].checked = false;
+                this.$.form.elements['phastcons'].checked = false;
+
+                this.expressionMode = 'matrix';
+                this.$.form.elements['expression'].value = 'matrix';
+                this.design_type = 'categorical';
+                this.$.form.elements['design_type'].value = 'categorical';
+
+                this.$.form.elements['species'].value = 'hsa';
+
+                this.$.form.elements['ref_genome'].value = 'hg19';
+                this.$.form.elements['inheritance_pattern'].value = 'recessive';
+
+                this.$.form.elements['decompose'].checked = false;
+                this.$.form.elements['filter_paths'].checked = false;
+
+                this.$.jobName.value = '';
+                this.$.jobDescription.value = '';
+
+                this._uncheckTissues();
+                this.set('selectedTissueSet', this.ea);
+                this.set('exp_db', 'ea');
+                this.$.form.elements['exp_db'].value = 'ea';
+
+                this.set('modelJob', null);
+                this.set('modelStats', []);
+                this.set('modelDesignFile', null);
+                this.set('modelFile', null);
+
+                this._clearError('output_folder');
+                this._clearError('exp_file');
+                this._clearError('variant_file');
+                this._clearError('tissue');
+                this._clearError('design_file');
+                this._clearError('condition1Select');
+                this._clearError('condition2Select');
+                this._clearError('condition');
+                this._clearError('pathways');
+                this._clearError('model');
+
+                this.selectAllPw();
+            },
+            launchJob: function(e) {
+                var me = this;
+
+                this.errorMessage = '';
+
+
+                var query = {
+                    sid: Cookies("bioinfo_sid"),
+                    name: this.$.jobName.value,
+                    description: this.$.jobDescription.value
+                };
+                if (this.$.output_folder.selectedFile != null) {
+                    query.outdirId = this.$.output_folder.selectedFile._id;
+                }
+                if (this.$.jobName.value == '') {
+                    query['name'] = 'Prediction ' + this.type + ' job'
+                }
+
+                var args = {
+                    tool: this.toolId,
+                    execution: 'prediction-' + this.type,
+                    executable: 'prediction-' + this.type + '.sh',
+                    options: {
+                        "output_folder": {
+                            out: true,
+                        },
+                        "verbose": {
+                            type: 'flag'
+                        }
+                    }
+                };
+
+
+                if (this.expressionMode === 'matrix') {
+                    if (this.$.exp_file.selectedFile == null) {
+                        this._setError('exp_file', 'No expression matrix file selected');
+                    } else {
+                        this._clearError('exp_file');
+                        args.options['exp_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.$.exp_file.selectedFile._id
+                        };
+                    }
+
+                    if (this.$.variant_file.selectedFile != null) {
+                        args.options['variant_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.$.variant_file.selectedFile._id
+                        };
+                    }
+
+                } else if (this.expressionMode === 'database') {
+                    if (this.$.variant_file.selectedFile == null) {
+                        this._setError('variant_file', 'Variant file must be selected when using an expression database');
+                    } else {
+                        this._clearError('variant_file');
+                        args.options['variant_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.$.variant_file.selectedFile._id
+                        };
+                    }
+
+                    args.options['exp_db'] = {
+                        type: 'text',
+                        value: this.$.form.elements['exp_db'].value
+                    };
+
+                    if (this.$.form.elements[args.options['exp_db'].value].value == '') {
+                        this._setError('tissue', 'A tissue must be selected');
+                    } else {
+                        this._clearError('tissue');
+                        args.options['tissue'] = {
+                            type: 'text',
+                            value: this.$.form.elements[args.options['exp_db'].value].value
+                        };
+                    }
+                }
+
+                if (this.type === 'train') {
+
+                    if (this.$.variant_file.selectedFile != null) {
+                        args.options['ref_genome'] = {
+                            type: 'text',
+                            value: this.$.form.elements['ref_genome'].value
+                        };
+                        args.options['inheritance_pattern'] = {
+                            type: 'text',
+                            value: this.$.form.elements['inheritance_pattern'].value
+                        };
+
+                        if (this.$.form.elements['compound_hetero'].checked) {
+                            args.options['compound_hetero'] = {
+                                type: 'flag'
+                            };
+                        }
+                        if (this.$.form.elements['sift'].checked) {
+                            args.options['sift'] = {
+                                type: 'flag'
+                            };
+                        }
+                        if (this.$.form.elements['polyphen'].checked) {
+                            args.options['polyphen'] = {
+                                type: 'flag'
+                            };
+                        }
+                        if (this.$.form.elements['phastcons'].checked) {
+                            args.options['phastcons'] = {
+                                type: 'flag'
+                            };
+                        }
+                    }
+
+                    args.options['species'] = {
+                        type: 'text',
+                        value: this.$.form.elements['species'].value
+                    };
+                    args.options['design_type'] = {
+                        type: 'text',
+                        value: this.$.form.elements['design_type'].value
+                    };
+
+                    if (this.$.design_file.selectedFile == null) {
+                        this._setError('design_file', 'No experimental design file selected');
+                    } else {
+                        this._clearError('design_file');
+                        args.options['design_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.$.design_file.selectedFile._id
+                        };
+                    }
+
+                    if (this.$.condition1Select.selected == null) {
+                        this._setError('condition1Select', 'Condition 1 not selected.');
+                    } else if (this.$.condition1Select.selected.name.indexOf(' ') != -1) {
+                        this._setError('condition1Select', 'Spaces are not allowed in conditions.');
+                    } else {
+                        this._clearError('condition1Select');
+                        args.options['cond1'] = {
+                            type: 'text',
+                            value: this.$.condition1Select.selected.name
+                        };
+                    }
+
+                    if (this.$.condition2Select.selected == null) {
+                        this._setError('condition2Select', 'Condition 2 not selected.');
+                    } else if (this.$.condition2Select.selected.name.indexOf(' ') != -1) {
+                        this._setError('condition2Select', 'Spaces are not allowed in conditions.');
+                    } else {
+                        this._clearError('condition2Select');
+                        args.options['cond2'] = {
+                            type: 'text',
+                            value: this.$.condition2Select.selected.name
+                        };
+                    }
+
+
+                    if (args.options['cond2'].value != null &&
+                        args.options['cond1'].value != null &&
+                        args.options['cond2'].value == args.options['cond1'].value) {
+
+                        this._setError('condition', 'Condition 2 is the same as condition 1.');
+                    } else if (args.options['cond2'].value != null && args.options['cond1'].value != null) {
+                        this._clearError('condition');
+                    }
+
+                    if (this.$.form.elements['decompose'].checked) {
+                        args.options['decompose'] = {
+                            type: 'flag'
+                        };
+                    }
+                    if (this.$.form.elements['filter_paths'].checked) {
+                        args.options['filter_paths'] = {
+                            type: 'flag'
+                        };
+                    }
+
+                    var pathways = [];
+                    var els = this.$.pathwaysContent.querySelectorAll('input[type=checkbox]');
+                    for (var i = 0; i < els.length; i++) {
+                        var pathway = els[i];
+                        if (pathway.checked) {
+                            // pathways.push('hsa' + pathway.value);
+                            pathways.push(pathway.value);
+                        }
+                    }
+                    if (pathways.length < 1) {
+                        this._setError('pathways', 'Please select at least one Pathway');
+                    } else {
+                        this._clearError('pathways');
+                        args.options['pathways_list'] = {
+                            type: 'text',
+                            value: pathways.join(',')
+                        };
+                    }
+
+                } else if (this.type === 'test') {
+                    if (this.modelFile == null) {
+                        this._setError('model', 'No model selected, please select one.');
+                    } else {
+                        this._clearError('model');
+                        args.options['model_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.modelFile._id
+                        };
+                    }
+
+                }
+
+                console.log(query);
+                if (this.errorMessage === '' && this.$.form.checkValidity() && this.runTest === false) {
+                    // console.log('TODO');
+                    console.log(query);
+                    console.log(args);
+                    // return;
+                    me._createJob(query, args);
+                }
+            },
+            _createJob: function(query, args) {
+                var me = this;
+                SteviaManager.jobs.create({
+                    query: query,
+                    request: {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(args),
+                        success: function(response) {
+                            if (response.response[0].error == null) {
+                                console.log(response);
+                                // var job = response.response[0].result[0];
+                                // console.log(job);
+                                me._clean();
+                                me.fire('job-launched');
+                                //                                    me.message = job.commandLine;
+                            } else {
+                                me.message = response.response[0].errorMsg;
+                            }
+                        },
+                        error: function() {
+                            me.message = 'Server error, try again later.';
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</dom-module>
